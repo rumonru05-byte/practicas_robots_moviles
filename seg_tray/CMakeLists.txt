@@ -23,8 +23,8 @@ ament_target_dependencies(nav_p2p rclcpp geometry_msgs nav_msgs)
 
 # Instalar ejecutables
 install(TARGETS
-  # nav_p2p
-  corr_nav
+  nav_p2p
+  # corr_nav
   DESTINATION lib/${PROJECT_NAME}
 )
 
