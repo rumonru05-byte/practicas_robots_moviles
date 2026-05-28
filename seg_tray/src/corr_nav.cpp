@@ -2,6 +2,7 @@
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "std_srvs/srv/trigger.hpp" // Servicio para detección de pared frontal
 #include <cmath>
 #include <vector>
 #include <numeric>
@@ -30,6 +31,10 @@ public:
         timer_ = this->create_wall_timer(
             std::chrono::milliseconds(time_step_),
             std::bind(&CorridorNavigationNode::controlLoop, this));
+
+        wall_service_ = this->create_service<std_srvs::srv::Trigger>(
+            "check_front_wall",
+            std::bind(&CorridorNavigationNode::wallServiceCallback, this, std::placeholders::_1, std::placeholders::_2));
 
         RCLCPP_INFO(this->get_logger(), "Corridor Navigation Node Initialized");
         measured_data_=false;
@@ -107,6 +112,8 @@ private:
         // Lateral distances using a window of ±10°
         dist_left_  = averageRangeInWindow(msg, +M_PI/2, 1.0);   // +90°
         dist_right_ = averageRangeInWindow(msg, -M_PI/2, 1.0);   // -90°
+        
+        dist_front_ = averageRangeInWindow(msg, 0.0, 5.0);  // 0°
 
         // Looking ahead (80º) and rear (100º) to detect if which wall is closer
         // Using closer wall to determine orientation sign (theta_sign_)
@@ -139,6 +146,21 @@ private:
         RCLCPP_INFO(this->get_logger(), "Left=%.2f m, Right=%.2f m", dist_left_, dist_right_);
     }
 
+    void wallServiceCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                             std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+    {
+        (void)request;
+        
+        if (dist_front_ < 1.5) { // Umbral de aviso
+            response->success = true;
+            response->message = "¡ALERTA! Pared frontal detectada a " + std::to_string(dist_front_) + " metros.";
+            RCLCPP_WARN(this->get_logger(), "Servicio consultado: Pared detectada.");
+        } else {
+            response->success = false;
+            response->message = "Camino despejado. Distancia al frente: " + std::to_string(dist_front_) + " metros.";
+        }
+    }
+
     void controlLoop()
     {
         if (!measured_data_) {
@@ -155,24 +177,38 @@ private:
 
             /////////////////// PUT YOUR CONTROL CODE HERE ///////////
 
-            double d = look_ahead_distance_;
-            double dL = (dist_left_ - dist_right_) / 2.0;
-            double dy = dL * cos(theta) - d * sin(theta); 
-            double k = 2 * dy / (d * d); // Curvature
-            double linear_velocity = 0.7 * max_linear_speed_ * (1 - fabs(dL) / (corridor_width_/2));
-            if (linear_velocity < 0.1) {
-                linear_velocity = 0.1; 
-            }
-            double angular_velocity = k * linear_velocity;
+            geometry_msgs::msg::Twist cmd_vel_msg;
 
-            if (angular_velocity > max_angular_speed_) angular_velocity = max_angular_speed_;
-            if (angular_velocity < -max_angular_speed_) angular_velocity = -max_angular_speed_;
-            
+            if (dist_front_ < 1.0) {
+                cmd_vel_msg.linear.x = 0.0;
+                cmd_vel_msg.angular.z = 0.0;
+                RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000, 
+                                     "Estrategia de Parada: Pared detectada a %.2f m. Robot detenido.", dist_front_);
+            }
+            else {
+
+                // Control de Persecución Pura
+                double d = look_ahead_distance_;
+                double dL = (dist_left_ - dist_right_) / 2.0;
+                double dy = dL * cos(theta) - d * sin(theta); 
+                double k = 2 * dy / (d * d); 
+                
+                double linear_velocity = 0.7 * max_linear_speed_ * (1 - fabs(dL) / (corridor_width_/2));
+                if (linear_velocity < 0.1) {
+                    linear_velocity = 0.1; 
+                }
+                
+                double angular_velocity = k * linear_velocity;
+
+                if (angular_velocity > max_angular_speed_) angular_velocity = max_angular_speed_;
+                if (angular_velocity < -max_angular_speed_) angular_velocity = -max_angular_speed_;
+                
+                cmd_vel_msg.linear.x = linear_velocity;
+                cmd_vel_msg.angular.z = angular_velocity;
+            }
+
             /////////////////////////////////////////////////////////
 
-            geometry_msgs::msg::Twist cmd_vel_msg;
-            cmd_vel_msg.linear.x = linear_velocity;
-            cmd_vel_msg.angular.z = angular_velocity;
             cmd_vel_pub_->publish(cmd_vel_msg);
         }
     }
@@ -182,6 +218,7 @@ private:
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr pose_sub_;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
     rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr wall_service_;
 
     // Parameters
     int time_step_;
@@ -201,8 +238,10 @@ private:
     double dist_left_;
     double dist_right_;
     double theta_sign_ = 1.0; // +1 if facing left wall, -1 if facing right wall
+    double dist_front_ = 10.0;
     double measured_data_=false;
     sensor_msgs::msg::LaserScan::SharedPtr last_scan_;
+    
 };  
 
 int main(int argc, char * argv[])

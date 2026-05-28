@@ -42,7 +42,7 @@ La escena de CoppeliaSim tiene configurada una ruta absoluta para el archivo de 
    ```
 
 ### 📉 _Resultados_
-![Demostración de Navegación P2P](nav-p2p.gif)
+![Demostración de Navegación P2P](videos_P1/nav-p2p.gif)
 * Para eliminar el viraje inicial que se observa, se propone implementar un flag de inicialización. Esto consistiría en ignorar el controlLoop() hasta que el nodo haya recibido el primer mensaje válido de odometría, evitando así que el robot calcule errores basándose en una pose inicial por defecto.
 * El vídeo ha sido acelerado (x3) para acortar su duración; el robot se mueve en tiempo real respetando el parámetro max_linear_speed: 1.2 definido en el archivo de configuración.
 
