@@ -22,7 +22,7 @@ Ampliación de Robótica. Robots Móviles. Repositorio con las prácticas de seg
 Clona este repositorio dentro de la carpeta `src` de tu espacio de trabajo de ROS 2 y compila el paquete:
   ```bash
   cd ~/ros/amp_rob_ws/src
-  git clone https://github.com/rumonru05-byte/P1-Seg_Caminos.git
+  git clone https://github.com/rumonru05-byte/practicas-robots-moviles.git
   cd ~/ros/amp_rob_ws
   colcon build --packages-select seg_tray
   ```
@@ -49,7 +49,7 @@ La escena de CoppeliaSim tiene configurada una ruta absoluta para el archivo de 
 1. En CoppeliaSim, haz doble clic sobre el icono del script asociado al Pioneer P3DX.
 2. Localiza la variable file y actualiza la ruta con tu directorio local:
    ```bash
-   local file="/home/tu_usuario/ros/amp_rob_ws/src/P1-Seg_Caminos/seg_tray/config/nav_params.yaml"
+   local file="/home/tu_usuario/ros/amp_rob_ws/src/practicas-robots-moviles/seg_tray/config/nav_params.yaml"
    ```
 
 ### 📉 _Resultados_
