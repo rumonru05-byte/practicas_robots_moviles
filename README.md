@@ -1,12 +1,23 @@
-# Practica 1: Seguimiento de caminos, explícitos e implícitos.
-Ampliación de Robótica. Robots Móviles. Práctica 1: Seguimiento de caminos, con ROS2 y CoppeliaSIM.
+# Prácticas de Navegación y Percepción - Robots Móviles
+Ampliación de Robótica. Robots Móviles. Repositorio con las prácticas de seguimiento de caminos (explícitos e implícitos) y percepción del entorno, implementadas con ROS 2 y CoppeliaSim.
 
+## 📋 Índice
+1. [🛠️ Tecnologías y Entorno](#tecnologias)
+2. [🎮 Instalación y Compilación](#instalacion)
+3. [Parte I: Seguimiento de Caminos Explícitos (Navegación P2P) 🤖](#parte1)
+4. [Parte II: Seguimiento de Caminos Implícitos (Persecución Pura) 🤖](#parte2)
+5. [Parte III: Percepción del Entorno (Extracción de Rectas) 👁️](#parte3)
+
+---
+
+<a id="tecnologias"></a>
 ## 🛠️ Tecnologías y Entorno
 * **SO:** Ubuntu 22.04 (WSL)
 * **Middleware:** ROS 2 Humble
 * **Simulador:** CoppeliaSim Edu (V4.10)
 * **Lenguaje:** C++
 
+<a id="instalacion"></a>
 ## 🎮 Instalación y Compilación
 Clona este repositorio dentro de la carpeta `src` de tu espacio de trabajo de ROS 2 y compila el paquete:
   ```bash
@@ -18,8 +29,8 @@ Clona este repositorio dentro de la carpeta `src` de tu espacio de trabajo de RO
 
 ---
 
+<a id="parte1"></a>
 ## Parte I: Seguimiento de Caminos Explícitos (Navegación P2P) 🤖
-
 Esta parte de la práctica consiste en la implementación de un nodo de ROS 2 en C++ para el control cinemático y **navegación punto a punto** (Point-to-Point, P2P) de un robot móvil diferencial (Pioneer P3DX) dentro del simulador CoppeliaSim.
 
 ### 🎯 _Objetivo_
@@ -48,7 +59,8 @@ La escena de CoppeliaSim tiene configurada una ruta absoluta para el archivo de 
 
 ---
 
-## Parte II: Seguimiento de Caminos Implícitos (Persecución pura) 🤖
+<a id="parte2"></a>
+## Parte II: Seguimiento de Caminos Implícitos (Persecución Pura) 🤖
 Esta parte de la práctica aborda la navegación basada en la **persecución pura**, utilizando un nodo en C++ que procesa datos en tiempo real de un sensor láser de barrido a bordo del Pioneer P3DX.
 
 ### 🎯 _Objetivo_
@@ -75,3 +87,35 @@ El servicio devolverá un éxito (success=True) junto con una alerta si la pared
 
 A continuación, un vídeo en el que se observa el robot sometido a diferentes colocaciones de inicio.
 ![Demostración en varias posiciones](videos_P1/corr_nav_3.gif)
+
+---
+
+<a id="parte3"></a>
+## Parte III: Percepción del Entorno (Extracción de Rectas) 👁️
+Esta parte de la práctica se centra en el problema de la percepción: cómo extraer información geométrica del entorno a partir de los datos recibidos del sensor láser y cómo usar esta para moverse.
+
+### 🎯 _Objetivo_
+Sustituir la estimación puntual por ventanas de la parte anterior por un algoritmo de **regresión lineal por mínimos cuadrados** (*least squares fitting*). El robot calcula en tiempo real la ecuación de la recta ($y = mx + b$) para las paredes izquierda y derecha, obteniendo una estimación del entorno mucho más robusta frente al ruido y las desalineaciones. Además, estas rectas calculadas se utilizan para minimizar los errores de orientación y posición en el bucle de control.
+
+### 🛠️ _Detalles de Implementación_
+* **Extracción de características (`extractWall`)**: Se transforman los puntos del láser dentro de una ventana de $\pm45^\circ$ de coordenadas polares $(r, \theta)$ a cartesianas locales $(x, y)$, aplicando las ecuaciones analíticas de mínimos cuadrados para obtener la pendiente ($m$) y la ordenada en el origen ($b$).
+* **Control Cinemático Adaptado**: El `controlLoop()` calcula el error lateral ($dL$) a partir del parámetro $b$ de las rectas, y el error de orientación ($\theta$) mediante el arco tangente de la pendiente $m$.
+
+### 🚀 _Lanzamiento_
+1. Abre CoppeliaSim, carga la escena del pasillo (`corridor_scene.ttt`) y pulsa Play ▶️.
+2. Lanza el nodo de percepción:
+   ```bash
+   ros2 launch seg_tray corr_nav_wall_launch.py
+   ```
+
+### 📉 Resultados
+![Demostración de la Percepción del Entorno](videos_P1/corr_nav_wall.gif)
+En la demostración se aprecia cómo el robot minimiza sus errores de posición y orientación para navegar centrado y paralelo al pasillo. El controlador alcanza este equilibrio cuando las pendientes ($m$) de ambas rectas tienden a 0 y sus ordenadas en el origen ($b$) mantienen el mismo valor absoluto con signos opuestos, como se observa en la terminal cuando el robot consigue centrarse.
+
+Ahora se mostrará cómo al alcanzar la curva el error aumenta debido al cambio de ambas paredes:
+![Demostración de la navegación en curva](videos_P1/corr_nav_wall_curva.gif)
+
+
+
+
+
