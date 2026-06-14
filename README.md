@@ -1,4 +1,4 @@
-# Prácticas de Navegación y Percepción - Robots Móviles
+# Prácticas de Navegación y Percepción - Robots Móviles 🚗
 Ampliación de Robótica. Robots Móviles. Repositorio con las prácticas de seguimiento de caminos (explícitos e implícitos) y percepción del entorno, implementadas con ROS 2 y CoppeliaSim.
 
 ## 📋 Índice
