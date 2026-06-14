@@ -22,7 +22,7 @@ Ampliación de Robótica. Robots Móviles. Repositorio con las prácticas de seg
 Clona este repositorio dentro de la carpeta `src` de tu espacio de trabajo de ROS 2 y compila el paquete:
   ```bash
   cd ~/ros/amp_rob_ws/src
-  git clone https://github.com/rumonru05-byte/practicas-robots-moviles.git
+  git clone https://github.com/rumonru05-byte/practicas_robots_moviles.git
   cd ~/ros/amp_rob_ws
   colcon build --packages-select seg_tray
   ```
